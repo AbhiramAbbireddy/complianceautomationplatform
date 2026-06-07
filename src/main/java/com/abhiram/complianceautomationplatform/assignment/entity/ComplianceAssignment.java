@@ -20,29 +20,32 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @Entity
-@Table(name="compliance_assignments")
+@Table(name = "compliance_assignments")
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class ComplianceAssignment
-{
+public class ComplianceAssignment {
     @Id
-    @GeneratedValue(strategy=GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne(fetch=FetchType.LAZY)
-    @JoinColumn(name="compliance_id")
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "compliance_id")
     private Compliance compliance;
 
-    @ManyToOne(fetch=FetchType.LAZY)
-    @JoinColumn(name="assigned_to")
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "assigned_to")
     private User assignedTo;
 
-    @ManyToOne(fetch=FetchType.LAZY)
-    @JoinColumn(name="assigned_by")
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "assigned_by")
     private User assignedBy;
 
     private LocalDateTime assignedAt;
+
+    private String remarks;
+
+    private LocalDateTime completedAt;
 }

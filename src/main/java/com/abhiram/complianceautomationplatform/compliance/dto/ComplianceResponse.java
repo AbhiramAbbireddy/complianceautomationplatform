@@ -22,4 +22,6 @@ public class ComplianceResponse {
     private ComplianceFrequency frequency;
 
     private ComplianceStatus status;
+
+    private String department;
 }

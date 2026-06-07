@@ -6,6 +6,7 @@ import java.time.LocalDateTime;
 import com.abhiram.complianceautomationplatform.common.enums.ComplianceFrequency;
 import com.abhiram.complianceautomationplatform.common.enums.ComplianceStatus;
 import com.abhiram.complianceautomationplatform.company.entity.Company;
+import com.abhiram.complianceautomationplatform.department.entity.Department;
 import com.abhiram.complianceautomationplatform.user.entity.User;
 
 import jakarta.persistence.Column;
@@ -26,7 +27,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @Entity
-@Table(name="compliances")
+@Table(name = "compliances")
 @Getter
 @Setter
 @NoArgsConstructor
@@ -34,12 +35,12 @@ import lombok.Setter;
 @Builder
 public class Compliance {
     @Id
-    @GeneratedValue(strategy=GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     private String title;
 
-    @Column(length=2000)
+    @Column(length = 2000)
     private String description;
 
     private LocalDate dueDate;
@@ -50,13 +51,18 @@ public class Compliance {
     @Enumerated(EnumType.STRING)
     private ComplianceStatus status;
 
-    @ManyToOne(fetch=FetchType.LAZY)
-    @JoinColumn(name="company_id")
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "company_id")
     private Company company;
 
-    @ManyToOne(fetch=FetchType.LAZY)
-    @JoinColumn(name="created_by")
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "created_by")
     private User createdBy;
 
     private LocalDateTime createdAt;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "department_id")
+    private Department department;
+    
 }

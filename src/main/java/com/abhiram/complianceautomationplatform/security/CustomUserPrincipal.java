@@ -9,63 +9,51 @@ import org.springframework.security.core.userdetails.UserDetails;
 
 import com.abhiram.complianceautomationplatform.user.entity.User;
 
-public class CustomUserPrincipal implements UserDetails
-{
+public class CustomUserPrincipal implements UserDetails {
     private final User user;
 
-    public CustomUserPrincipal(User user)
-    {
-        this.user=user;
+    public CustomUserPrincipal(User user) {
+        this.user = user;
     }
 
     @Override
-    public Collection<? extends GrantedAuthority> getAuthorities()
-    {
+    public Collection<? extends GrantedAuthority> getAuthorities() {
         return List.of(
                 new SimpleGrantedAuthority(
-                        "ROLE_"+user.getRole().getName()
-                )
-        );
+                        "ROLE_" + user.getRole().getName()));
     }
 
     @Override
-    public String getPassword()
-    {
+    public String getPassword() {
         return user.getPassword();
     }
 
     @Override
-    public String getUsername()
-    {
+    public String getUsername() {
         return user.getEmail();
     }
 
     @Override
-    public boolean isAccountNonExpired()
-    {
+    public boolean isAccountNonExpired() {
         return true;
     }
 
     @Override
-    public boolean isAccountNonLocked()
-    {
+    public boolean isAccountNonLocked() {
         return true;
     }
 
     @Override
-    public boolean isCredentialsNonExpired()
-    {
+    public boolean isCredentialsNonExpired() {
         return true;
     }
 
     @Override
-    public boolean isEnabled()
-    {
+    public boolean isEnabled() {
         return user.isEnabled();
     }
 
-    public User getUser()
-    {
+    public User getUser() {
         return user;
     }
 }

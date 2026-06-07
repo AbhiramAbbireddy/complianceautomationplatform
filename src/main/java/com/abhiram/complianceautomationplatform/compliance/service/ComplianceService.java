@@ -6,6 +6,7 @@ import java.util.stream.Collectors;
 
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.abhiram.complianceautomationplatform.common.enums.ComplianceStatus;
 import com.abhiram.complianceautomationplatform.compliance.dto.ComplianceResponse;
@@ -13,6 +14,9 @@ import com.abhiram.complianceautomationplatform.compliance.dto.CreateComplianceR
 import com.abhiram.complianceautomationplatform.compliance.dto.UpdateComplianceRequest;
 import com.abhiram.complianceautomationplatform.compliance.entity.Compliance;
 import com.abhiram.complianceautomationplatform.compliance.repository.ComplianceRepository;
+import com.abhiram.complianceautomationplatform.department.entity.Department;
+import com.abhiram.complianceautomationplatform.department.repository.DepartmentRepository;
+import com.abhiram.complianceautomationplatform.exception.ResourceNotFoundException;
 import com.abhiram.complianceautomationplatform.security.CustomUserPrincipal;
 import com.abhiram.complianceautomationplatform.user.entity.User;
 
@@ -21,116 +25,151 @@ import lombok.RequiredArgsConstructor;
 @Service
 @RequiredArgsConstructor
 public class ComplianceService {
-    private final ComplianceRepository complianceRepository;
+        private final ComplianceRepository complianceRepository;
 
-    public ComplianceResponse createCompliance(
-            CreateComplianceRequest request,
-            Authentication authentication) {
-        CustomUserPrincipal principal = (CustomUserPrincipal) authentication.getPrincipal();
+        private final DepartmentRepository departmentRepository;
 
-        User user = principal.getUser();
+        @Transactional
+        public ComplianceResponse createCompliance(
+                        CreateComplianceRequest request,
+                        Authentication authentication) {
+                CustomUserPrincipal principal = (CustomUserPrincipal) authentication.getPrincipal();
 
-        Compliance compliance = Compliance.builder()
-                .title(request.getTitle())
-                .description(request.getDescription())
-                .dueDate(request.getDueDate())
-                .frequency(request.getFrequency())
-                .status(ComplianceStatus.PENDING)
-                .company(user.getCompany())
-                .createdBy(user)
-                .createdAt(LocalDateTime.now())
-                .build();
+                User user = principal.getUser();
 
-        complianceRepository.save(compliance);
+                Department department = departmentRepository
+                                .findByIdAndCompany(
+                                                request.getDepartmentId(),
+                                                user.getCompany())
+                                .orElseThrow(() -> new ResourceNotFoundException(
+                                                "Department not found"));
 
-        return ComplianceResponse.builder()
-                .id(compliance.getId())
-                .title(compliance.getTitle())
-                .description(compliance.getDescription())
-                .dueDate(compliance.getDueDate())
-                .frequency(compliance.getFrequency())
-                .status(compliance.getStatus())
-                .build();
-    }
+                Compliance compliance = Compliance.builder()
+                                .title(request.getTitle())
+                                .description(request.getDescription())
+                                .dueDate(request.getDueDate())
+                                .frequency(request.getFrequency())
+                                .status(ComplianceStatus.PENDING)
+                                .company(user.getCompany())
+                                .department(department)
+                                .createdBy(user)
+                                .createdAt(LocalDateTime.now())
+                                .build();
 
-    public List<ComplianceResponse> getAllCompliances(
-            Authentication authentication) {
-        CustomUserPrincipal principal = (CustomUserPrincipal) authentication.getPrincipal();
+                complianceRepository.save(compliance);
 
-        User currentUser = principal.getUser();
+                return ComplianceResponse.builder()
+                                .id(compliance.getId())
+                                .title(compliance.getTitle())
+                                .description(compliance.getDescription())
+                                .dueDate(compliance.getDueDate())
+                                .frequency(compliance.getFrequency())
+                                .status(compliance.getStatus())
+                                .department(department.getName())
+                                .build();
+        }
 
-        List<Compliance> compliances = complianceRepository.findByCompany(
-                currentUser.getCompany());
+        @Transactional(readOnly = true)
+        public List<ComplianceResponse> getAllCompliances(
+                        Authentication authentication) {
+                CustomUserPrincipal principal = (CustomUserPrincipal) authentication.getPrincipal();
 
-        return compliances.stream()
-                .map(this::mapToResponse)
-                .collect(Collectors.toList());
-    }
+                User currentUser = principal.getUser();
 
-    public ComplianceResponse getComplianceById(
-            Long id,
-            Authentication authentication) {
-        CustomUserPrincipal principal = (CustomUserPrincipal) authentication.getPrincipal();
+                List<Compliance> compliances = complianceRepository.findByCompany(
+                                currentUser.getCompany());
 
-        User currentUser = principal.getUser();
+                return compliances.stream()
+                                .map(this::mapToResponse)
+                                .collect(Collectors.toList());
+        }
 
-        Compliance compliance = complianceRepository.findByIdAndCompany(
-                id,
-                currentUser.getCompany())
-                .orElseThrow(() -> new RuntimeException(
-                        "Compliance not found"));
+        @Transactional(readOnly = true)
+        public ComplianceResponse getComplianceById(
+                        Long id,
+                        Authentication authentication) {
+                CustomUserPrincipal principal = (CustomUserPrincipal) authentication.getPrincipal();
 
-        return mapToResponse(compliance);
-    }
+                User currentUser = principal.getUser();
 
-    private ComplianceResponse mapToResponse(Compliance compliance) {
-        return ComplianceResponse.builder()
-                .id(compliance.getId())
-                .title(compliance.getTitle())
-                .description(compliance.getDescription())
-                .dueDate(compliance.getDueDate())
-                .frequency(compliance.getFrequency())
-                .status(compliance.getStatus())
-                .build();
-    }
+                Compliance compliance = complianceRepository.findByIdAndCompany(
+                                id,
+                                currentUser.getCompany())
+                                .orElseThrow(() -> new ResourceNotFoundException(
+                                                "Compliance not found"));
 
-    public ComplianceResponse updateCompliance(
-            Long id,
-            UpdateComplianceRequest request,
-            Authentication authentication) {
-        CustomUserPrincipal principal = (CustomUserPrincipal) authentication.getPrincipal();
+                return mapToResponse(compliance);
+        }
 
-        User currentUser = principal.getUser();
+        private ComplianceResponse mapToResponse(Compliance compliance) {
+                return ComplianceResponse.builder()
+                                .id(compliance.getId())
+                                .title(compliance.getTitle())
+                                .description(compliance.getDescription())
+                                .dueDate(compliance.getDueDate())
+                                .frequency(compliance.getFrequency())
+                                .status(compliance.getStatus())
+                                .department(
+                                                compliance.getDepartment() != null
+                                                                ? compliance.getDepartment().getName()
+                                                                : null)
+                                .build();
+        }
 
-        Compliance compliance = complianceRepository.findByIdAndCompany(
-                id,
-                currentUser.getCompany())
-                .orElseThrow(() -> new RuntimeException(
-                        "Compliance not found"));
+        @Transactional
+        public ComplianceResponse updateCompliance(
+                        Long id,
+                        UpdateComplianceRequest request,
+                        Authentication authentication) {
+                CustomUserPrincipal principal = (CustomUserPrincipal) authentication.getPrincipal();
 
-        compliance.setTitle(request.getTitle());
-        compliance.setDescription(request.getDescription());
-        compliance.setDueDate(request.getDueDate());
-        compliance.setFrequency(request.getFrequency());
+                User currentUser = principal.getUser();
 
-        compliance = complianceRepository.save(compliance);
+                Compliance compliance = complianceRepository.findByIdAndCompany(
+                                id,
+                                currentUser.getCompany())
+                                .orElseThrow(() -> new ResourceNotFoundException(
+                                                "Compliance not found"));
 
-        return mapToResponse(compliance);
-    }
+                compliance.setTitle(request.getTitle());
+                compliance.setDescription(request.getDescription());
+                compliance.setDueDate(request.getDueDate());
+                compliance.setFrequency(request.getFrequency());
 
-    public void deleteCompliance(
-            Long id,
-            Authentication authentication) {
-        CustomUserPrincipal principal = (CustomUserPrincipal) authentication.getPrincipal();
+                compliance = complianceRepository.save(compliance);
 
-        User currentUser = principal.getUser();
+                return mapToResponse(compliance);
+        }
 
-        Compliance compliance = complianceRepository.findByIdAndCompany(
-                id,
-                currentUser.getCompany())
-                .orElseThrow(() -> new RuntimeException(
-                        "Compliance not found"));
+        @Transactional
+        public void deleteCompliance(
+                        Long id,
+                        Authentication authentication) {
+                CustomUserPrincipal principal = (CustomUserPrincipal) authentication.getPrincipal();
 
-        complianceRepository.delete(compliance);
-    }
+                User currentUser = principal.getUser();
+
+                Compliance compliance = complianceRepository.findByIdAndCompany(
+                                id,
+                                currentUser.getCompany())
+                                .orElseThrow(() -> new ResourceNotFoundException(
+                                                "Compliance not found"));
+
+                complianceRepository.delete(compliance);
+        }
+
+        @Transactional(readOnly = true)
+        public List<ComplianceResponse> getMyDepartmentCompliances(
+                        Authentication authentication) {
+                CustomUserPrincipal principal = (CustomUserPrincipal) authentication.getPrincipal();
+
+                User currentUser = principal.getUser();
+
+                return complianceRepository
+                                .findByDepartment(
+                                                currentUser.getDepartment())
+                                .stream()
+                                .map(this::mapToResponse)
+                                .toList();
+        }
 }

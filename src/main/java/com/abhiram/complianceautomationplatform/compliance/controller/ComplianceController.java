@@ -27,57 +27,66 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 @SecurityRequirement(name = "bearerAuth")
 public class ComplianceController {
-    private final ComplianceService complianceService;
+        private final ComplianceService complianceService;
 
-    @PostMapping
-    @PreAuthorize("hasAnyRole('OWNER','COMPLIANCE_MANAGER')")
-    public ComplianceResponse createCompliance(
-            @Valid @RequestBody CreateComplianceRequest request,
-            Authentication authentication) {
-        return complianceService.createCompliance(
-                request,
-                authentication);
-    }
+        @PostMapping
+        @PreAuthorize("hasAnyRole('OWNER','COMPLIANCE_MANAGER')")
+        public ComplianceResponse createCompliance(
+                        @Valid @RequestBody CreateComplianceRequest request,
+                        Authentication authentication) {
+                return complianceService.createCompliance(
+                                request,
+                                authentication);
+        }
 
-    @GetMapping
-    @PreAuthorize("hasAnyRole('OWNER','COMPLIANCE_MANAGER','AUDITOR')")
-    public List<ComplianceResponse> getAllCompliances(
-            Authentication authentication) {
-        return complianceService.getAllCompliances(
-                authentication);
-    }
+        @GetMapping
+        @PreAuthorize("hasAnyRole('OWNER','COMPLIANCE_MANAGER','AUDITOR')")
+        public List<ComplianceResponse> getAllCompliances(
+                        Authentication authentication) {
+                return complianceService.getAllCompliances(
+                                authentication);
+        }
 
-    @GetMapping("/{id}")
-    @PreAuthorize("hasAnyRole('OWNER','COMPLIANCE_MANAGER','AUDITOR')")
-    public ComplianceResponse getComplianceById(
-            @PathVariable Long id,
-            Authentication authentication) {
-        return complianceService.getComplianceById(
-                id,
-                authentication);
-    }
+        @GetMapping("/{id}")
+        @PreAuthorize("hasAnyRole('OWNER','COMPLIANCE_MANAGER','AUDITOR')")
+        public ComplianceResponse getComplianceById(
+                        @PathVariable Long id,
+                        Authentication authentication) {
+                return complianceService.getComplianceById(
+                                id,
+                                authentication);
+        }
 
-    @PutMapping("/{id}")
-    @PreAuthorize("hasAnyRole('OWNER','COMPLIANCE_MANAGER')")
-    public ComplianceResponse updateCompliance(
-            @PathVariable Long id,
-            @Valid @RequestBody UpdateComplianceRequest request,
-            Authentication authentication) {
-        return complianceService.updateCompliance(
-                id,
-                request,
-                authentication);
-    }
+        @PutMapping("/{id}")
+        @PreAuthorize("hasAnyRole('OWNER','COMPLIANCE_MANAGER')")
+        public ComplianceResponse updateCompliance(
+                        @PathVariable Long id,
+                        @Valid @RequestBody UpdateComplianceRequest request,
+                        Authentication authentication) {
+                return complianceService.updateCompliance(
+                                id,
+                                request,
+                                authentication);
+        }
 
-    @DeleteMapping("/{id}")
-    @PreAuthorize("hasAnyRole('OWNER','COMPLIANCE_MANAGER')")
-    public String deleteCompliance(
-            @PathVariable Long id,
-            Authentication authentication) {
-        complianceService.deleteCompliance(
-                id,
-                authentication);
+        @DeleteMapping("/{id}")
+        @PreAuthorize("hasAnyRole('OWNER','COMPLIANCE_MANAGER')")
+        public String deleteCompliance(
+                        @PathVariable Long id,
+                        Authentication authentication) {
+                complianceService.deleteCompliance(
+                                id,
+                                authentication);
 
-        return "Compliance Deleted Successfully";
-    }
+                return "Compliance Deleted Successfully";
+        }
+
+        @GetMapping("/my-department")
+        @PreAuthorize("hasRole('DEPARTMENT_MANAGER')")
+        public List<ComplianceResponse> getMyDepartmentCompliances(
+                        Authentication authentication) {
+                return complianceService
+                                .getMyDepartmentCompliances(
+                                                authentication);
+        }
 }

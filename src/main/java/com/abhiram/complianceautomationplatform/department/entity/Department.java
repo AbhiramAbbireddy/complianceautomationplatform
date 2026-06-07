@@ -1,10 +1,8 @@
-package com.abhiram.complianceautomationplatform.user.entity;
+package com.abhiram.complianceautomationplatform.department.entity;
 
 import java.time.LocalDateTime;
 
 import com.abhiram.complianceautomationplatform.company.entity.Company;
-import com.abhiram.complianceautomationplatform.department.entity.Department;
-import com.abhiram.complianceautomationplatform.role.entity.Role;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -22,13 +20,13 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @Entity
-@Table(name = "users")
+@Table(name = "departments")
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class User {
+public class Department {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -36,29 +34,9 @@ public class User {
     @Column(nullable = false)
     private String name;
 
-    @Column(nullable = false, unique = true)
-    private String email;
-
-    @Column(nullable = false)
-    private String password;
-
-    private boolean enabled;
-
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "company_id")
     private Company company;
 
-    @ManyToOne(fetch = FetchType.EAGER)
-    @JoinColumn(name = "role_id")
-    private Role role;
-
     private LocalDateTime createdAt;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "department_id")
-    private Department department;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "manager_id")
-    private User manager;
 }

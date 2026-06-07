@@ -10,6 +10,7 @@ import lombok.Data;
 
 @Data
 public class CreateComplianceRequest {
+
     @NotBlank
     private String title;
 
@@ -21,4 +22,7 @@ public class CreateComplianceRequest {
 
     @NotNull
     private ComplianceFrequency frequency;
+
+    @NotNull
+    private Long departmentId;
 }
