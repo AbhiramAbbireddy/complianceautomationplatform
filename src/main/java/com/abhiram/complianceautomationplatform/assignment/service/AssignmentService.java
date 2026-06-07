@@ -11,6 +11,7 @@ import com.abhiram.complianceautomationplatform.assignment.dto.CreateAssignmentR
 import com.abhiram.complianceautomationplatform.assignment.dto.UpdateAssignmentStatusRequest;
 import com.abhiram.complianceautomationplatform.assignment.entity.ComplianceAssignment;
 import com.abhiram.complianceautomationplatform.assignment.repository.ComplianceAssignmentRepository;
+import com.abhiram.complianceautomationplatform.audit.service.AuditLogService;
 import com.abhiram.complianceautomationplatform.common.enums.ComplianceStatus;
 import com.abhiram.complianceautomationplatform.compliance.entity.Compliance;
 import com.abhiram.complianceautomationplatform.compliance.repository.ComplianceRepository;
@@ -28,6 +29,7 @@ public class AssignmentService {
         private final ComplianceAssignmentRepository assignmentRepository;
         private final ComplianceRepository complianceRepository;
         private final UserRepository userRepository;
+        private final AuditLogService auditLogService;
 
         @Transactional
         public AssignmentResponse createAssignment(
@@ -77,6 +79,16 @@ public class AssignmentService {
 
                 assignment = assignmentRepository.save(
                                 assignment);
+
+                auditLogService.log(
+                                "ASSIGN_COMPLIANCE",
+                                "COMPLIANCE",
+                                compliance.getId(),
+                                currentUser.getEmail(),
+                                "Assigned "
+                                                + compliance.getTitle()
+                                                + " to "
+                                                + employee.getName());
 
                 return mapToResponse(
                                 assignment);
@@ -154,6 +166,14 @@ public class AssignmentService {
 
                 assignment = assignmentRepository.save(
                                 assignment);
+
+                auditLogService.log(
+                                "UPDATE_STATUS",
+                                "COMPLIANCE",
+                                assignment.getCompliance().getId(),
+                                currentUser.getEmail(),
+                                "Status changed to "
+                                                + request.getStatus());
 
                 return mapToResponse(
                                 assignment);

@@ -9,6 +9,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.abhiram.complianceautomationplatform.department.entity.Department;
 import com.abhiram.complianceautomationplatform.department.repository.DepartmentRepository;
+import com.abhiram.complianceautomationplatform.exception.BusinessException;
 import com.abhiram.complianceautomationplatform.exception.DuplicateResourceException;
 import com.abhiram.complianceautomationplatform.exception.ResourceNotFoundException;
 import com.abhiram.complianceautomationplatform.role.RoleConstants;
@@ -157,7 +158,7 @@ public class UserService {
                 if (!manager.getRole()
                                 .getName()
                                 .equals(RoleConstants.DEPARTMENT_MANAGER)) {
-                        throw new RuntimeException(
+                        throw new BusinessException(
                                         "Selected user is not a Department Manager");
                 }
 
