@@ -11,10 +11,13 @@ import com.abhiram.complianceautomationplatform.assignment.dto.CreateAssignmentR
 import com.abhiram.complianceautomationplatform.assignment.dto.UpdateAssignmentStatusRequest;
 import com.abhiram.complianceautomationplatform.assignment.entity.ComplianceAssignment;
 import com.abhiram.complianceautomationplatform.assignment.repository.ComplianceAssignmentRepository;
+import com.abhiram.complianceautomationplatform.audit.annotation.Audit;
 import com.abhiram.complianceautomationplatform.audit.service.AuditLogService;
 import com.abhiram.complianceautomationplatform.common.enums.ComplianceStatus;
 import com.abhiram.complianceautomationplatform.compliance.entity.Compliance;
 import com.abhiram.complianceautomationplatform.compliance.repository.ComplianceRepository;
+import com.abhiram.complianceautomationplatform.document.repository.ComplianceDocumentRepository;
+import com.abhiram.complianceautomationplatform.exception.BusinessException;
 import com.abhiram.complianceautomationplatform.exception.ResourceNotFoundException;
 import com.abhiram.complianceautomationplatform.role.RoleConstants;
 import com.abhiram.complianceautomationplatform.security.CustomUserPrincipal;
@@ -30,7 +33,9 @@ public class AssignmentService {
         private final ComplianceRepository complianceRepository;
         private final UserRepository userRepository;
         private final AuditLogService auditLogService;
+        private final ComplianceDocumentRepository documentRepository;
 
+        @Audit(action = "ASSIGN_COMPLIANCE", entityType = "COMPLIANCE")
         @Transactional
         public AssignmentResponse createAssignment(
                         CreateAssignmentRequest request,
@@ -179,4 +184,50 @@ public class AssignmentService {
                                 assignment);
         }
 
+        @Transactional
+        public AssignmentResponse verifyAssignment(
+                        Long assignmentId,
+                        Authentication authentication) {
+
+                CustomUserPrincipal principal = (CustomUserPrincipal) authentication.getPrincipal();
+
+                User currentUser = principal.getUser();
+
+                ComplianceAssignment assignment = assignmentRepository
+                                .findByIdAndAssignedBy(
+                                                assignmentId,
+                                                currentUser)
+                                .orElseThrow(() -> new ResourceNotFoundException(
+                                                "Assignment not found"));
+
+                Compliance compliance = assignment.getCompliance();
+
+                if (compliance.getStatus() != ComplianceStatus.COMPLETED) {
+
+                        throw new RuntimeException(
+                                        "Only completed compliances can be verified");
+                }
+
+                if (documentRepository
+                                .findByCompliance(compliance)
+                                .isEmpty()) {
+
+                        throw new BusinessException(
+                                        "No supporting documents uploaded for "
+                                                        + compliance.getTitle());
+                }
+
+                compliance.setStatus(
+                                ComplianceStatus.VERIFIED);
+
+                auditLogService.log(
+                                "VERIFY_COMPLIANCE",
+                                "COMPLIANCE",
+                                compliance.getId(),
+                                currentUser.getEmail(),
+                                "Verified " + compliance.getTitle());
+
+                return mapToResponse(
+                                assignment);
+        }
 }

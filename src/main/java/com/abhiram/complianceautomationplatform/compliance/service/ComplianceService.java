@@ -8,6 +8,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.abhiram.complianceautomationplatform.assignment.repository.ComplianceAssignmentRepository;
 import com.abhiram.complianceautomationplatform.common.enums.ComplianceStatus;
 import com.abhiram.complianceautomationplatform.compliance.dto.ComplianceResponse;
 import com.abhiram.complianceautomationplatform.compliance.dto.CreateComplianceRequest;
@@ -28,6 +29,8 @@ public class ComplianceService {
         private final ComplianceRepository complianceRepository;
 
         private final DepartmentRepository departmentRepository;
+
+        private final ComplianceAssignmentRepository complianceAssignmentRepository;
 
         @Transactional
         public ComplianceResponse createCompliance(
@@ -170,6 +173,22 @@ public class ComplianceService {
                                                 currentUser.getDepartment())
                                 .stream()
                                 .map(this::mapToResponse)
+                                .toList();
+        }
+
+        @Transactional(readOnly = true)
+        public List<ComplianceResponse> getMyCompliances(
+                        Authentication authentication) {
+                CustomUserPrincipal principal = (CustomUserPrincipal) authentication.getPrincipal();
+
+                User currentUser = principal.getUser();
+
+                return complianceAssignmentRepository
+                                .findByAssignedTo(
+                                                currentUser)
+                                .stream()
+                                .map(assignment -> mapToResponse(
+                                                assignment.getCompliance()))
                                 .toList();
         }
 }

@@ -89,4 +89,12 @@ public class ComplianceController {
                                 .getMyDepartmentCompliances(
                                                 authentication);
         }
+
+        @GetMapping("/my-compliances")
+        @PreAuthorize("hasRole('EMPLOYEE')")
+        public List<ComplianceResponse> getMyCompliances(
+                        Authentication authentication) {
+                return complianceService.getMyCompliances(
+                                authentication);
+        }
 }

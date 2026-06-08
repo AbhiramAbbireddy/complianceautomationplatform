@@ -5,5 +5,6 @@ public enum ComplianceStatus {
     ASSIGNED,
     IN_PROGRESS,
     COMPLETED,
-    OVERDUE
+    OVERDUE,
+    VERIFIED
 }

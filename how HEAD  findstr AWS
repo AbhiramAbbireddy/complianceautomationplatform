@@ -1,0 +1,190 @@
+[33mcommit 2b865d9485a3209179ae15031f58c29c21971724[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m)[m
+Author: DevAbhiram <btechabhi07@gmail.com>
+Date:   Mon Jun 8 11:05:47 2026 +0530
+
+    feat(compliance): add document management, verification workflow, aws s3 integration and flyway migrations
+
+[1mdiff --git a/.github/modernize/java-upgrade/.gitignore b/.github/modernize/java-upgrade/.gitignore[m
+[1mindex f4621f7..31934f9 100644[m
+[1m--- a/.github/modernize/java-upgrade/.gitignore[m
+[1m+++ b/.github/modernize/java-upgrade/.gitignore[m
+[36m@@ -47,4 +47,6 @@[m [mapplication-prod.properties[m
+ *.swp[m
+ [m
+ # Spring Boot[m
+[31m-spring.log[m
+\ No newline at end of file[m
+[32m+[m[32mspring.log[m
+[32m+[m
+[32m+[m[32mapplication.properties[m
+\ No newline at end of file[m
+[1mdiff --git a/pom.xml b/pom.xml[m
+[1mindex dc442d1..7b1a2af 100644[m
+[1m--- a/pom.xml[m
+[1m+++ b/pom.xml[m
+[36m@@ -1,187 +1,207 @@[m
+ <?xml version="1.0" encoding="UTF-8"?>[m
+ <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"[m
+[31m-	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">[m
+[31m-	<modelVersion>4.0.0</modelVersion>[m
+[31m-	<parent>[m
+[31m-		<groupId>org.springframework.boot</groupId>[m
+[31m-		<artifactId>spring-boot-starter-parent</artifactId>[m
+[31m-		<version>4.0.6</version>[m
+[31m-		<relativePath/> <!-- lookup parent from repository -->[m
+[31m-	</parent>[m
+[31m-	<groupId>com.abhiram</groupId>[m
+[31m-	<artifactId>complianceautomationplatform</artifactId>[m
+[31m-	<version>0.0.1-SNAPSHOT</version>[m
+[31m-	<name/>[m
+[31m-	<description/>[m
+[31m-	<url/>[m
+[31m-	<licenses>[m
+[31m-		<license/>[m
+[31m-	</licenses>[m
+[31m-	<developers>[m
+[31m-		<developer/>[m
+[31m-	</developers>[m
+[31m-	<scm>[m
+[31m-		<connection/>[m
+[31m-		<developerConnection/>[m
+[31m-		<tag/>[m
+[31m-		<url/>[m
+[31m-	</scm>[m
+[31m-	<properties>[m
+[31m-		<java.version>17</java.version>[m
+[31m-	</properties>[m
+[31m-	<dependencies>[m
+[31m-		<dependency>[m
+[31m-			<groupId>org.springframework.boot</groupId>[m
+[31m-			<artifactId>spring-boot-starter-data-jpa</artifactId>[m
+[31m-		</dependency>[m
+[31m-		<dependency>[m
+[31m-			<groupId>org.springframework.boot</groupId>[m
+[31m-			<artifactId>spring-boot-starter-flyway</artifactId>[m
+[31m-		</dependency>[m
+[31m-		<dependency>[m
+[31m-			<groupId>org.springframework.boot</groupId>[m
+[31m-			<artifactId>spring-boot-starter-mail</artifactId>[m
+[31m-		</dependency>[m
+[31m-		<dependency>[m
+[31m-			<groupId>org.springframework.boot</groupId>[m
+[31m-			<artifactId>spring-boot-starter-security</artifactId>[m
+[31m-		</dependency>[m
+[31m-		<dependency>[m
+[31m-			<groupId>org.springframework.boot</groupId>[m
+[31m-			<artifactId>spring-boot-starter-validation</artifactId>[m
+[31m-		</dependency>[m
+[31m-		<dependency>[m
+[31m-			<groupId>org.springframework.boot</groupId>[m
+[31m-			<artifactId>spring-boot-starter-webmvc</artifactId>[m
+[31m-		</dependency>[m
+[31m-		<dependency>[m
+[32m+[m[32m         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">[m
+[32m+[m[32m    <modelVersion>4.0.0</modelVersion>[m
+[32m+[m[32m    <parent>[m
+[32m+[m[32m        <groupId>org.springframework.boot</groupId>[m
+[32m+[m[32m        <artifactId>spring-boot-starter-parent</artifactId>[m
+[32m+[m[32m        <version>4.0.6</version>[m
+[32m+[m[32m        <relativePath/> <!-- lookup parent from repository -->[m
+[32m+[m[32m    </parent>[m
+[32m+[m[32m    <groupId>com.abhiram</groupId>[m
+[32m+[m[32m    <artifactId>complianceautomationplatform</artifactId>[m
+[32m+[m[32m    <version>0.0.1-SNAPSHOT</version>[m
+[32m+[m[32m    <name/>[m
+[32m+[m[32m    <description/>[m
+[32m+[m[32m    <url/>[m
+[32m+[m[32m    <licenses>[m
+[32m+[m[32m        <license/>[m
+[32m+[m[32m    </licenses>[m
+[32m+[m[32m    <developers>[m
+[32m+[m[32m        <developer/>[m
+[32m+[m[32m    </developers>[m
+[32m+[m[32m    <scm>[m
+[32m+[m[32m        <connection/>[m
+[32m+[m[32m        <developerConnection/>[m
+[32m+[m[32m        <tag/>[m
+[32m+[m[32m        <url/>[m
+[32m+[m[32m    </scm>[m
+[32m+[m[32m    <properties>[m
+[32m+[m[32m        <java.version>17</java.version>[m
+[32m+[m[32m    </properties>[m
+[32m+[m[32m    <dependencyManagement>[m
+[32m+[m[32m        <dependencies>[m
+[32m+[m[32m            <dependency>[m
+[32m+[m[32m                <groupId>software.amazon.awssdk</groupId>[m
+[32m+[m[32m                <artifactId>bom</artifactId>[m
+[32m+[m[32m                <version>2.31.72</version>[m
+[32m+[m[32m                <type>pom</type>[m
+[32m+[m[32m                <scope>import</scope>[m
+[32m+[m[32m            </dependency>[m
+[32m+[m[32m        </dependencies>[m
+[32m+[m[32m    </dependencyManagement>[m
+[32m+[m[32m    <dependencies>[m
+[32m+[m[32m        <dependency>[m
+[32m+[m[32m            <groupId>org.springframework.boot</groupId>[m
+[32m+[m[32m            <artifactId>spring-boot-starter-data-jpa</artifactId>[m
+[32m+[m[32m        </dependency>[m
+[32m+[m[32m        <dependency>[m
+[32m+[m[32m            <groupId>org.springframework.boot</groupId>[m
+[32m+[m[32m            <artifactId>spring-boot-starter-flyway</artifactId>[m
+[32m+[m[32m        </dependency>[m
+[32m+[m[32m        <dependency>[m
+[32m+[m[32m            <groupId>org.springframework.boot</groupId>[m
+[32m+[m[32m            <artifactId>spring-boot-starter-mail</artifactId>[m
+[32m+[m[32m        </dependency>[m
+[32m+[m[32m        <dependency>[m
+[32m+[m[32m            <groupId>org.springframework.boot</groupId>[m
+[32m+[m[32m            <artifactId>spring-boot-starter-security</artifactId>[m
+[32m+[m[32m        </dependency>[m
+[32m+[m[32m        <dependency>[m
+[32m+[m[32m            <groupId>org.springframework.boot</groupId>[m
+[32m+[m[32m            <artifactId>spring-boot-starter-validation</artifactId>[m
+[32m+[m[32m        </dependency>[m
+[32m+[m[32m        <dependency>[m
+[32m+[m[32m            <groupId>org.springframework.boot</groupId>[m
+[32m+[m[32m            <artifactId>spring-boot-starter-webmvc</artifactId>[m
+[32m+[m[32m        </dependency>[m
+[32m+[m[32m        <dependency>[m
+             <groupId>org.springframework.boot</groupId>[m
+             <artifactId>spring-boot-devtools</artifactId>[m
+             <scope>runtime</scope>[m
+             <optional>true</optional>[m
+         </dependency>[m
+[31m-		<dependency>[m
+[31m-			<groupId>org.flywaydb</groupId>[m
+[31m-			<artifactId>flyway-database-postgresql</artifactId>[m
+[31m-		</dependency>[m
+[32m+[m[32m        <dependency>[m
+[32m+[m[32m            <groupId>org.flywaydb</groupId>[m
+[32m+[m[32m            <artifactId>flyway-database-postgresql</artifactId>[m
+[32m+[m[32m        </dependency>[m
+ [m
+[31m-		<dependency>[m
+[31m-			<groupId>org.postgresql</groupId>[m
+[31m-			<artifactId>postgresql</artifactId>[m
+[31m-			<scope>runtime</scope>[m
+[31m-		</dependency>[m
+[31m-		<dependency>[m
+[31m-			<groupId>org.projectlombok</groupId>[m
+[31m-			<artifactId>lombok</artifactId>[m
+[31m-			<optional>true</optional>[m
+[31m-		</dependency>[m
+[31m-		<dependency>[m
+[31m-			<groupId>org.springframework.boot</groupId>[m
+[31m-			<artifactId>spring-boot-starter-data-jpa-test</artifactId>[m
+[31m-			<scope>test</scope>[m
+[31m-		</dependency>[m
+[31m-		<dependency>[m
+[31m-			<groupId>org.springframework.boot</groupId>[m
+[31m-			<artifactId>spring-boot-starter-flyway-test</artifactId>[m
+[31m-			<scope>test</scope>[m
+[31m-		</dependency>[m
+[31m-		<dependency>[m
+[31m-			<groupId>org.springframework.boot</groupId>[m
+[31m-			<artifactId>spring-boot-starter-mail-test</artifactId>[m
+[31m-			<scope>test</scope>[m
+[31m-		</dependency>[m
+[31m-		<dependency>[m
+[31m-			<groupId>org.springframework.boot</groupId>[m
+[31m-			

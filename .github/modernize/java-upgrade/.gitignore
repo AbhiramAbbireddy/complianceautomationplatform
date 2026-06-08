@@ -48,3 +48,5 @@ application-prod.properties
 
 # Spring Boot
 spring.log
+
+application.properties
