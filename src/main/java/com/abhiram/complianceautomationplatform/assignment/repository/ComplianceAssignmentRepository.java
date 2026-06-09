@@ -34,6 +34,9 @@ public interface ComplianceAssignmentRepository
                         User assignedTo);
 
         Optional<ComplianceAssignment> findByIdAndAssignedBy(
-        Long id,
-        User assignedBy);
+                        Long id,
+                        User assignedBy);
+
+        List<ComplianceAssignment> findByCompliance_StatusNot(
+                        ComplianceStatus status);
 }

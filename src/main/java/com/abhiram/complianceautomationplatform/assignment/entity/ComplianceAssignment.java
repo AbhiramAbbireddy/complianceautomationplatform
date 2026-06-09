@@ -5,6 +5,7 @@ import java.time.LocalDateTime;
 import com.abhiram.complianceautomationplatform.compliance.entity.Compliance;
 import com.abhiram.complianceautomationplatform.user.entity.User;
 
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
@@ -48,4 +49,16 @@ public class ComplianceAssignment {
     private String remarks;
 
     private LocalDateTime completedAt;
+
+    @Builder.Default
+    @Column(name = "reminder_3day_sent", nullable = false)
+    private boolean reminder3DaySent = false;
+
+    @Builder.Default
+    @Column(name = "reminder_1day_sent", nullable = false)
+    private boolean reminder1DaySent = false;
+
+    @Builder.Default
+    @Column(name = "overdue_reminder_sent", nullable = false)
+    private boolean overdueReminderSent = false;
 }

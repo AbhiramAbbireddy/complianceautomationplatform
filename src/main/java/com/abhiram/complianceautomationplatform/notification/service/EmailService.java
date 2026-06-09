@@ -1,10 +1,13 @@
 package com.abhiram.complianceautomationplatform.notification.service;
 
-import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
+import com.abhiram.complianceautomationplatform.notification.template.EmailTemplates;
+
+import jakarta.mail.internet.MimeMessage;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -13,78 +16,108 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class EmailService {
 
-    private final JavaMailSender mailSender;
+        private final JavaMailSender mailSender;
 
-    @Async
-    public void sendEmail(
-            String to,
-            String subject,
-            String body) {
+        @Async
+        public void sendHtmlEmail(
+                        String to,
+                        String subject,
+                        String htmlContent) {
 
-        try {
+                try {
 
-            SimpleMailMessage message = new SimpleMailMessage();
+                        MimeMessage message = mailSender.createMimeMessage();
 
-            message.setTo(to);
-            message.setSubject(subject);
-            message.setText(body);
+                        MimeMessageHelper helper = new MimeMessageHelper(
+                                        message,
+                                        true,
+                                        "UTF-8");
 
-            mailSender.send(message);
+                        helper.setTo(to);
+                        helper.setSubject(subject);
+                        helper.setText(
+                                        htmlContent,
+                                        true);
 
-        } catch (Exception ex) {
+                        mailSender.send(message);
 
-            log.error(
-                    "Failed to send email to {}",
-                    to,
-                    ex);
+                } catch (Exception ex) {
+
+                        log.error(
+                                        "Failed to send email to {}",
+                                        to,
+                                        ex);
+                }
         }
-    }
 
-    public void sendAssignmentNotification(
-            String employeeEmail,
-            String employeeName,
-            String complianceTitle) {
+        public void sendAssignmentNotification(
+                        String employeeEmail,
+                        String employeeName,
+                        String complianceTitle,
+                        String assignedBy) {
 
-        sendEmail(
-                employeeEmail,
-                "New Compliance Assigned",
-                "Hello " + employeeName
-                        + ",\n\n"
-                        + "A new compliance has been assigned to you.\n\n"
-                        + "Compliance: " + complianceTitle
-                        + "\n\nPlease login and complete it before the due date.");
-    }
+                sendHtmlEmail(
+                                employeeEmail,
+                                "New Compliance Assigned",
+                                EmailTemplates.assignmentTemplate(
+                                                employeeName,
+                                                complianceTitle,
+                                                assignedBy));
+        }
 
-    public void sendCompletionNotification(
-            String managerEmail,
-            String managerName,
-            String complianceTitle,
-            String employeeName) {
+        public void sendCompletionNotification(
+                        String managerEmail,
+                        String managerName,
+                        String complianceTitle,
+                        String employeeName) {
 
-        sendEmail(
-                managerEmail,
-                "Compliance Completed",
-                "Hello " + managerName
-                        + ",\n\n"
-                        + employeeName
-                        + " has completed the compliance:\n\n"
-                        + complianceTitle
-                        + "\n\nPlease review and verify it.");
-    }
+                sendHtmlEmail(
+                                managerEmail,
+                                "Compliance Completed",
+                                EmailTemplates.completionTemplate(
+                                                managerName,
+                                                complianceTitle,
+                                                employeeName));
+        }
 
-    public void sendVerificationNotification(
-            String employeeEmail,
-            String employeeName,
-            String complianceTitle) {
+        public void sendVerificationNotification(
+                        String employeeEmail,
+                        String employeeName,
+                        String complianceTitle) {
 
-        sendEmail(
-                employeeEmail,
-                "Compliance Verified",
-                "Hello " + employeeName
-                        + ",\n\n"
-                        + "Your compliance has been verified.\n\n"
-                        + "Compliance: "
-                        + complianceTitle
-                        + "\n\nGreat job!");
-    }
+                sendHtmlEmail(
+                                employeeEmail,
+                                "Compliance Verified",
+                                EmailTemplates.verificationTemplate(
+                                                employeeName,
+                                                complianceTitle));
+        }
+
+        public void sendReminderNotification(
+                        String employeeEmail,
+                        String employeeName,
+                        String complianceTitle,
+                        long daysLeft) {
+
+                sendHtmlEmail(
+                                employeeEmail,
+                                "Compliance Reminder",
+                                EmailTemplates.reminderTemplate(
+                                                employeeName,
+                                                complianceTitle,
+                                                daysLeft));
+        }
+
+        public void sendOverdueNotification(
+                        String employeeEmail,
+                        String employeeName,
+                        String complianceTitle) {
+
+                sendHtmlEmail(
+                                employeeEmail,
+                                "Compliance Overdue",
+                                EmailTemplates.overdueTemplate(
+                                                employeeName,
+                                                complianceTitle));
+        }
 }

@@ -16,6 +16,8 @@ import com.abhiram.complianceautomationplatform.role.RoleConstants;
 import com.abhiram.complianceautomationplatform.role.entity.Role;
 import com.abhiram.complianceautomationplatform.role.repository.RoleRepository;
 import com.abhiram.complianceautomationplatform.security.JwtService;
+import com.abhiram.complianceautomationplatform.security.entity.RevokedToken;
+import com.abhiram.complianceautomationplatform.security.repository.RevokedTokenRepository;
 import com.abhiram.complianceautomationplatform.user.entity.User;
 import com.abhiram.complianceautomationplatform.user.repository.UserRepository;
 
@@ -24,56 +26,71 @@ import lombok.RequiredArgsConstructor;
 @Service
 @RequiredArgsConstructor
 public class AuthService {
-    private final CompanyRepository companyRepository;
-    private final UserRepository userRepository;
-    private final RoleRepository roleRepository;
-    private final PasswordEncoder passwordEncoder;
-    private final AuthenticationManager authenticationManager;
-    private final JwtService jwtService;
+        private final CompanyRepository companyRepository;
+        private final UserRepository userRepository;
+        private final RoleRepository roleRepository;
+        private final PasswordEncoder passwordEncoder;
+        private final AuthenticationManager authenticationManager;
+        private final JwtService jwtService;
+        private final RevokedTokenRepository revokedTokenRepository;
 
-    public String register(RegisterRequest request) {
-        if (userRepository.existsByEmail(request.getOwnerEmail())) {
-            throw new RuntimeException("User already exists");
+        public String register(RegisterRequest request) {
+                if (userRepository.existsByEmail(request.getOwnerEmail())) {
+                        throw new RuntimeException("User already exists");
+                }
+
+                Company company = Company.builder()
+                                .name(request.getCompanyName())
+                                .email(request.getCompanyEmail())
+                                .createdAt(LocalDateTime.now())
+                                .build();
+
+                companyRepository.save(company);
+
+                Role role = roleRepository.findByName(RoleConstants.OWNER)
+                                .orElseThrow(() -> new RuntimeException("Role not found"));
+
+                User owner = User.builder()
+                                .name(request.getOwnerName())
+                                .email(request.getOwnerEmail())
+                                .password(passwordEncoder.encode(request.getPassword()))
+                                .enabled(true)
+                                .company(company)
+                                .role(role)
+                                .createdAt(LocalDateTime.now())
+                                .build();
+
+                userRepository.save(owner);
+
+                return "Company Registered Successfully";
         }
 
-        Company company = Company.builder()
-                .name(request.getCompanyName())
-                .email(request.getCompanyEmail())
-                .createdAt(LocalDateTime.now())
-                .build();
+        public LoginResponse login(LoginRequest request) {
+                authenticationManager.authenticate(
+                                new UsernamePasswordAuthenticationToken(
+                                                request.getEmail(),
+                                                request.getPassword()));
 
-        companyRepository.save(company);
+                User user = userRepository.findByEmail(request.getEmail())
+                                .orElseThrow(() -> new RuntimeException("User not found"));
 
-        Role role = roleRepository.findByName(RoleConstants.OWNER)
-                .orElseThrow(() -> new RuntimeException("Role not found"));
+                String token = jwtService.generateToken(
+                                new com.abhiram.complianceautomationplatform.security.CustomUserPrincipal(user));
 
-        User owner = User.builder()
-                .name(request.getOwnerName())
-                .email(request.getOwnerEmail())
-                .password(passwordEncoder.encode(request.getPassword()))
-                .enabled(true)
-                .company(company)
-                .role(role)
-                .createdAt(LocalDateTime.now())
-                .build();
+                return new LoginResponse(token);
+        }
 
-        userRepository.save(owner);
+        public void logout(String token) {
 
-        return "Company Registered Successfully";
-    }
+                String jti = jwtService.extractJti(token);
 
-    public LoginResponse login(LoginRequest request) {
-        authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(
-                        request.getEmail(),
-                        request.getPassword()));
+                String email = jwtService.extractUsername(token);
 
-        User user = userRepository.findByEmail(request.getEmail())
-                .orElseThrow(() -> new RuntimeException("User not found"));
-
-        String token = jwtService.generateToken(
-                new com.abhiram.complianceautomationplatform.security.CustomUserPrincipal(user));
-
-        return new LoginResponse(token);
-    }
+                revokedTokenRepository.save(
+                                RevokedToken.builder()
+                                                .tokenJti(jti)
+                                                .userEmail(email)
+                                                .revokedAt(LocalDateTime.now())
+                                                .build());
+        }
 }

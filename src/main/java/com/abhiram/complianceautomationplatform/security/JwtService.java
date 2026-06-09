@@ -1,6 +1,7 @@
 package com.abhiram.complianceautomationplatform.security;
 
 import java.util.Date;
+import java.util.UUID;
 
 import javax.crypto.SecretKey;
 
@@ -24,8 +25,9 @@ public class JwtService {
     public String generateToken(UserDetails userDetails) {
         return Jwts.builder()
                 .subject(userDetails.getUsername())
+                .id(UUID.randomUUID().toString())
                 .issuedAt(new Date())
-                .expiration(new Date(System.currentTimeMillis()+jwtProperties.getExpiration()))
+                .expiration(new Date(System.currentTimeMillis() + jwtProperties.getExpiration()))
                 .signWith(getKey())
                 .compact();
     }
@@ -48,9 +50,16 @@ public class JwtService {
                 .before(new Date());
     }
 
-    public boolean isTokenValid(String token,UserDetails userDetails) {
+    public boolean isTokenValid(String token, UserDetails userDetails) {
         return extractUsername(token)
                 .equals(userDetails.getUsername())
                 && !isTokenExpired(token);
+    }
+
+    public String extractJti(
+            String token) {
+
+        return extractClaims(token)
+                .getId();
     }
 }

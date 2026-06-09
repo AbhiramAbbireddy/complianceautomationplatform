@@ -90,7 +90,8 @@ public class AssignmentService {
                 emailService.sendAssignmentNotification(
                                 employee.getEmail(),
                                 employee.getName(),
-                                compliance.getTitle());
+                                compliance.getTitle(),
+                                currentUser.getName());
 
                 auditLogService.log(
                                 "ASSIGN_COMPLIANCE",
@@ -232,7 +233,6 @@ public class AssignmentService {
                 compliance.setStatus(
                                 ComplianceStatus.VERIFIED);
 
-                                
                 emailService.sendVerificationNotification(
                                 assignment.getAssignedTo().getEmail(),
                                 assignment.getAssignedTo().getName(),
