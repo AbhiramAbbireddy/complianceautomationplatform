@@ -19,6 +19,7 @@ import com.abhiram.complianceautomationplatform.compliance.repository.Compliance
 import com.abhiram.complianceautomationplatform.document.repository.ComplianceDocumentRepository;
 import com.abhiram.complianceautomationplatform.exception.BusinessException;
 import com.abhiram.complianceautomationplatform.exception.ResourceNotFoundException;
+import com.abhiram.complianceautomationplatform.notification.service.EmailService;
 import com.abhiram.complianceautomationplatform.role.RoleConstants;
 import com.abhiram.complianceautomationplatform.security.CustomUserPrincipal;
 import com.abhiram.complianceautomationplatform.user.entity.User;
@@ -34,6 +35,7 @@ public class AssignmentService {
         private final UserRepository userRepository;
         private final AuditLogService auditLogService;
         private final ComplianceDocumentRepository documentRepository;
+        private final EmailService emailService;
 
         @Audit(action = "ASSIGN_COMPLIANCE", entityType = "COMPLIANCE")
         @Transactional
@@ -84,6 +86,11 @@ public class AssignmentService {
 
                 assignment = assignmentRepository.save(
                                 assignment);
+
+                emailService.sendAssignmentNotification(
+                                employee.getEmail(),
+                                employee.getName(),
+                                compliance.getTitle());
 
                 auditLogService.log(
                                 "ASSIGN_COMPLIANCE",
@@ -167,6 +174,11 @@ public class AssignmentService {
                 if (request.getStatus() == ComplianceStatus.COMPLETED) {
                         assignment.setCompletedAt(
                                         java.time.LocalDateTime.now());
+                        emailService.sendCompletionNotification(
+                                        assignment.getAssignedBy().getEmail(),
+                                        assignment.getAssignedBy().getName(),
+                                        assignment.getCompliance().getTitle(),
+                                        currentUser.getName());
                 }
 
                 assignment = assignmentRepository.save(
@@ -219,6 +231,12 @@ public class AssignmentService {
 
                 compliance.setStatus(
                                 ComplianceStatus.VERIFIED);
+
+                                
+                emailService.sendVerificationNotification(
+                                assignment.getAssignedTo().getEmail(),
+                                assignment.getAssignedTo().getName(),
+                                compliance.getTitle());
 
                 auditLogService.log(
                                 "VERIFY_COMPLIANCE",
