@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Value;
@@ -38,157 +39,198 @@ import software.amazon.awssdk.services.s3.presigner.model.PresignedGetObjectRequ
 @RequiredArgsConstructor
 public class DocumentService {
 
-    private final ComplianceDocumentRepository documentRepository;
+        private final ComplianceDocumentRepository documentRepository;
 
-    private final ComplianceRepository complianceRepository;
+        private final ComplianceRepository complianceRepository;
 
-    private final ComplianceAssignmentRepository complianceAssignmentRepository;
+        private final ComplianceAssignmentRepository complianceAssignmentRepository;
 
-    private final S3Client s3Client;
+        private final S3Client s3Client;
 
-    private final S3Presigner s3Presigner;
+        private final S3Presigner s3Presigner;
 
-    @Value("${aws.s3.bucket-name}")
-    private String bucketName;
+        private static final long MAX_FILE_SIZE = 10 * 1024 * 1024;
 
-    @Transactional
-    public DocumentResponse uploadDocument(
-            Long complianceId,
-            MultipartFile file,
-            Authentication authentication)
-            throws IOException {
+        private static final Set<String> ALLOWED_TYPES = Set.of(
+                        "application/pdf",
+                        "image/png",
+                        "image/jpeg",
+                        "image/jpg",
+                        "application/msword",
+                        "application/vnd.openxmlformats-officedocument.wordprocessingml.document");
 
-        CustomUserPrincipal principal = (CustomUserPrincipal) authentication.getPrincipal();
+        @Value("${aws.s3.bucket-name}")
+        private String bucketName;
 
-        User currentUser = principal.getUser();
+        @Transactional
+        public DocumentResponse uploadDocument(
+                        Long complianceId,
+                        MultipartFile file,
+                        Authentication authentication)
+                        throws IOException {
 
-        Compliance compliance = complianceRepository.findById(complianceId)
-                .orElseThrow(() -> new ResourceNotFoundException(
-                        "Compliance not found"));
+                if (file.isEmpty()) {
 
-        boolean assigned = complianceAssignmentRepository
-                .existsByComplianceAndAssignedTo(
-                        compliance,
-                        currentUser);
+                        throw new BusinessException(
+                                        "File cannot be empty");
+                }
 
-        boolean isDepartmentManager = RoleConstants.DEPARTMENT_MANAGER.equals(
-                currentUser.getRole().getName());
+                if (file.getSize() > MAX_FILE_SIZE) {
 
-        if (!assigned && !isDepartmentManager) {
-            throw new BusinessException(
-                    "You are not allowed to upload documents");
+                        throw new BusinessException(
+                                        "File size exceeds 10MB limit");
+                }
+
+                String contentType = file.getContentType();
+
+                if (contentType == null ||
+                                !ALLOWED_TYPES.contains(contentType)) {
+
+                        throw new BusinessException(
+                                        "File type not allowed. Accepted: PDF, PNG, JPG, DOC, DOCX");
+                }
+
+                String originalName = file.getOriginalFilename();
+
+                String safeName = originalName != null
+                                ? originalName.replaceAll(
+                                                "[^a-zA-Z0-9._-]",
+                                                "_")
+                                : "document";
+
+                String lowerFileName = safeName.toLowerCase();
+
+                if (!(lowerFileName.endsWith(".pdf")
+                                || lowerFileName.endsWith(".png")
+                                || lowerFileName.endsWith(".jpg")
+                                || lowerFileName.endsWith(".jpeg")
+                                || lowerFileName.endsWith(".doc")
+                                || lowerFileName.endsWith(".docx"))) {
+
+                        throw new BusinessException(
+                                        "Invalid file extension");
+                }
+
+                CustomUserPrincipal principal = (CustomUserPrincipal) authentication.getPrincipal();
+
+                User currentUser = principal.getUser();
+
+                Compliance compliance = complianceRepository.findById(complianceId)
+                                .orElseThrow(() -> new ResourceNotFoundException(
+                                                "Compliance not found"));
+
+                boolean assigned = complianceAssignmentRepository
+                                .existsByComplianceAndAssignedTo(
+                                                compliance,
+                                                currentUser);
+
+                boolean isDepartmentManager = RoleConstants.DEPARTMENT_MANAGER.equals(
+                                currentUser.getRole().getName());
+
+                if (!assigned && !isDepartmentManager) {
+
+                        throw new BusinessException(
+                                        "You are not allowed to upload documents");
+                }
+
+                String s3Key = UUID.randomUUID()
+                                + "-"
+                                + safeName;
+
+                PutObjectRequest request = PutObjectRequest.builder()
+                                .bucket(bucketName)
+                                .key(s3Key)
+                                .contentType(contentType)
+                                .build();
+
+                s3Client.putObject(
+                                request,
+                                RequestBody.fromInputStream(
+                                                file.getInputStream(),
+                                                file.getSize()));
+
+                String documentUrl = "s3://"
+                                + bucketName
+                                + "/"
+                                + s3Key;
+
+                ComplianceDocument document = ComplianceDocument.builder()
+                                .fileName(safeName)
+                                .fileType(contentType)
+                                .fileSize(file.getSize())
+                                .s3Key(s3Key)
+                                .documentUrl(documentUrl)
+                                .uploadedAt(LocalDateTime.now())
+                                .uploadedBy(currentUser)
+                                .compliance(compliance)
+                                .build();
+
+                document = documentRepository.save(
+                                document);
+
+                return DocumentResponse.builder()
+                                .id(document.getId())
+                                .fileName(document.getFileName())
+                                .fileType(document.getFileType())
+                                .fileSize(document.getFileSize())
+                                .documentUrl(document.getDocumentUrl())
+                                .uploadedBy(currentUser.getName())
+                                .uploadedAt(document.getUploadedAt())
+                                .build();
         }
 
-        String s3Key = UUID.randomUUID()
-                + "-"
-                + file.getOriginalFilename();
+        @Transactional(readOnly = true)
+        public List<DocumentResponse> getDocumentsByCompliance(
+                        Long complianceId) {
 
-        PutObjectRequest request = PutObjectRequest.builder()
-                .bucket(bucketName)
-                .key(s3Key)
-                .contentType(
-                        file.getContentType())
-                .build();
+                Compliance compliance = complianceRepository.findById(complianceId)
+                                .orElseThrow(() -> new ResourceNotFoundException(
+                                                "Compliance not found"));
 
-        s3Client.putObject(
-                request,
-                RequestBody.fromBytes(
-                        file.getBytes()));
+                return documentRepository
+                                .findByCompliance(compliance)
+                                .stream()
+                                .map(document -> DocumentResponse.builder()
+                                                .id(document.getId())
+                                                .fileName(document.getFileName())
+                                                .fileType(document.getFileType())
+                                                .fileSize(document.getFileSize())
+                                                .documentUrl(document.getDocumentUrl())
+                                                .uploadedBy(
+                                                                document.getUploadedBy()
+                                                                                .getName())
+                                                .uploadedAt(
+                                                                document.getUploadedAt())
+                                                .build())
+                                .toList();
+        }
 
-        String documentUrl = "s3://"
-                + bucketName
-                + "/"
-                + s3Key;
+        @Transactional(readOnly = true)
+        public DownloadUrlResponse generateDownloadUrl(
+                        Long documentId) {
+                ComplianceDocument document = documentRepository.findById(
+                                documentId)
+                                .orElseThrow(() -> new ResourceNotFoundException(
+                                                "Document not found"));
+                GetObjectRequest getObjectRequest = GetObjectRequest.builder()
+                                .bucket(bucketName)
+                                .key(document.getS3Key())
+                                .build();
 
-        ComplianceDocument document = ComplianceDocument.builder()
-                .fileName(
-                        file.getOriginalFilename())
-                .fileType(
-                        file.getContentType())
-                .fileSize(
-                        file.getSize())
-                .s3Key(s3Key)
-                .documentUrl(documentUrl)
-                .uploadedAt(
-                        LocalDateTime.now())
-                .uploadedBy(
-                        currentUser)
-                .compliance(
-                        compliance)
-                .build();
+                GetObjectPresignRequest presignRequest = GetObjectPresignRequest.builder()
+                                .signatureDuration(
+                                                Duration.ofMinutes(5))
+                                .getObjectRequest(
+                                                getObjectRequest)
+                                .build();
 
-        document = documentRepository.save(
-                document);
+                PresignedGetObjectRequest presignedRequest = s3Presigner.presignGetObject(
+                                presignRequest);
 
-        return DocumentResponse.builder()
-                .id(document.getId())
-                .fileName(
-                        document.getFileName())
-                .fileType(
-                        document.getFileType())
-                .fileSize(
-                        document.getFileSize())
-                .documentUrl(
-                        document.getDocumentUrl())
-                .uploadedBy(
-                        currentUser.getName())
-                .uploadedAt(
-                        document.getUploadedAt())
-                .build();
-    }
-
-    @Transactional(readOnly = true)
-    public List<DocumentResponse> getDocumentsByCompliance(
-            Long complianceId) {
-
-        Compliance compliance = complianceRepository.findById(complianceId)
-                .orElseThrow(() -> new ResourceNotFoundException(
-                        "Compliance not found"));
-
-        return documentRepository
-                .findByCompliance(compliance)
-                .stream()
-                .map(document -> DocumentResponse.builder()
-                        .id(document.getId())
-                        .fileName(document.getFileName())
-                        .fileType(document.getFileType())
-                        .fileSize(document.getFileSize())
-                        .documentUrl(document.getDocumentUrl())
-                        .uploadedBy(
-                                document.getUploadedBy()
-                                        .getName())
-                        .uploadedAt(
-                                document.getUploadedAt())
-                        .build())
-                .toList();
-    }
-
-    @Transactional(readOnly = true)
-    public DownloadUrlResponse generateDownloadUrl(
-            Long documentId) {
-        ComplianceDocument document = documentRepository.findById(
-                documentId)
-                .orElseThrow(() -> new ResourceNotFoundException(
-                        "Document not found"));
-        GetObjectRequest getObjectRequest = GetObjectRequest.builder()
-                .bucket(bucketName)
-                .key(document.getS3Key())
-                .build();
-
-        GetObjectPresignRequest presignRequest = GetObjectPresignRequest.builder()
-                .signatureDuration(
-                        Duration.ofMinutes(5))
-                .getObjectRequest(
-                        getObjectRequest)
-                .build();
-
-        PresignedGetObjectRequest presignedRequest = s3Presigner.presignGetObject(
-                presignRequest);
-
-        return DownloadUrlResponse.builder()
-                .downloadUrl(
-                        presignedRequest.url()
-                                .toString())
-                .build();
-    }
+                return DownloadUrlResponse.builder()
+                                .downloadUrl(
+                                                presignedRequest.url()
+                                                                .toString())
+                                .build();
+        }
 }
