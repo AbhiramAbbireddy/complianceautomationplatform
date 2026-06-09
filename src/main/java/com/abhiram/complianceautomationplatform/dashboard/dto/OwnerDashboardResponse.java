@@ -17,4 +17,8 @@ public class OwnerDashboardResponse {
     private long inProgressCompliances;
 
     private long completedCompliances;
+
+    private long verifiedCompliances;
+
+    private long overdueCompliances;
 }

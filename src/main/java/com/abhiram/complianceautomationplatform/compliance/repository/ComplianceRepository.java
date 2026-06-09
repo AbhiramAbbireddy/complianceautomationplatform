@@ -1,5 +1,6 @@
 package com.abhiram.complianceautomationplatform.compliance.repository;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
@@ -31,5 +32,15 @@ public interface ComplianceRepository extends JpaRepository<Compliance, Long> {
 
         long countByDepartmentAndStatus(
                         Department department,
+                        ComplianceStatus status);
+
+        long countByCompanyAndDueDateBeforeAndStatusNot(
+                        Company company,
+                        LocalDate date,
+                        ComplianceStatus status);
+
+        long countByDepartmentAndDueDateBeforeAndStatusNot(
+                        Department department,
+                        LocalDate date,
                         ComplianceStatus status);
 }

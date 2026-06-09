@@ -17,4 +17,8 @@ public class ManagerDashboardResponse {
     private long inProgressCompliances;
 
     private long completedCompliances;
+
+    private long verifiedCompliances;
+
+    private long overdueCompliances;
 }

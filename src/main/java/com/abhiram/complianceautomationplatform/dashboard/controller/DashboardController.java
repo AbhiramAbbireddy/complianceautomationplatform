@@ -8,10 +8,12 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.abhiram.complianceautomationplatform.dashboard.dto.EmployeeDashboardResponse;
 import com.abhiram.complianceautomationplatform.dashboard.dto.ManagerDashboardResponse;
 import com.abhiram.complianceautomationplatform.dashboard.dto.OwnerDashboardResponse;
 import com.abhiram.complianceautomationplatform.dashboard.dto.TeamMemberPerformanceResponse;
 import com.abhiram.complianceautomationplatform.dashboard.service.DashboardService;
+import com.abhiram.complianceautomationplatform.dashboard.dto.EmployeeDashboardResponse;
 
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import lombok.RequiredArgsConstructor;
@@ -47,5 +49,14 @@ public class DashboardController {
                 return dashboardService
                                 .getTeamPerformance(
                                                 authentication);
+        }
+
+        @GetMapping("/employee")
+        @PreAuthorize("hasRole('EMPLOYEE')")
+        public EmployeeDashboardResponse getEmployeeDashboard(
+                        Authentication authentication) {
+
+                return dashboardService.getEmployeeDashboard(
+                                authentication);
         }
 }

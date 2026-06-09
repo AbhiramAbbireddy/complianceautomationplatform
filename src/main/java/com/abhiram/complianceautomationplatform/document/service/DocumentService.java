@@ -63,10 +63,7 @@ public class DocumentService {
         @Value("${aws.s3.bucket-name}")
         private String bucketName;
 
-        @Audit(
-        action = "UPLOAD_DOCUMENT",
-        entityType = "DOCUMENT",
-        details = "Document uploaded")
+        @Audit(action = "UPLOAD_DOCUMENT", entityType = "DOCUMENT", details = "Document uploaded")
         @Transactional
         public DocumentResponse uploadDocument(
                         Long complianceId,
@@ -186,11 +183,43 @@ public class DocumentService {
 
         @Transactional(readOnly = true)
         public List<DocumentResponse> getDocumentsByCompliance(
-                        Long complianceId) {
+                        Long complianceId,
+                        Authentication authentication) {
+
+                CustomUserPrincipal principal = (CustomUserPrincipal) authentication.getPrincipal();
+
+                User currentUser = principal.getUser();
 
                 Compliance compliance = complianceRepository.findById(complianceId)
                                 .orElseThrow(() -> new ResourceNotFoundException(
                                                 "Compliance not found"));
+
+                if (!compliance.getCompany()
+                                .getId()
+                                .equals(currentUser.getCompany().getId())) {
+
+                        throw new BusinessException(
+                                        "Access denied");
+                }
+
+                boolean assigned = complianceAssignmentRepository
+                                .existsByComplianceAndAssignedTo(
+                                                compliance,
+                                                currentUser);
+
+                boolean isDepartmentManager = RoleConstants.DEPARTMENT_MANAGER.equals(
+                                currentUser.getRole().getName());
+
+                boolean isOwner = RoleConstants.OWNER.equals(
+                                currentUser.getRole().getName());
+
+                if (!assigned
+                                && !isDepartmentManager
+                                && !isOwner) {
+
+                        throw new BusinessException(
+                                        "You are not authorized to view documents");
+                }
 
                 return documentRepository
                                 .findByCompliance(compliance)
@@ -212,11 +241,51 @@ public class DocumentService {
 
         @Transactional(readOnly = true)
         public DownloadUrlResponse generateDownloadUrl(
-                        Long documentId) {
-                ComplianceDocument document = documentRepository.findById(
-                                documentId)
+                        Long documentId,
+                        Authentication authentication) {
+
+                CustomUserPrincipal principal = (CustomUserPrincipal) authentication.getPrincipal();
+
+                User currentUser = principal.getUser();
+
+                ComplianceDocument document = documentRepository.findById(documentId)
                                 .orElseThrow(() -> new ResourceNotFoundException(
                                                 "Document not found"));
+
+                Compliance compliance = document.getCompliance();
+
+                if (!compliance.getCompany()
+                                .getId()
+                                .equals(currentUser.getCompany().getId())) {
+
+                        throw new BusinessException(
+                                        "Access denied");
+                }
+
+                boolean assigned = complianceAssignmentRepository
+                                .existsByComplianceAndAssignedTo(
+                                                compliance,
+                                                currentUser);
+
+                boolean uploadedByUser = document.getUploadedBy()
+                                .getId()
+                                .equals(currentUser.getId());
+
+                boolean isDepartmentManager = RoleConstants.DEPARTMENT_MANAGER.equals(
+                                currentUser.getRole().getName());
+
+                boolean isOwner = RoleConstants.OWNER.equals(
+                                currentUser.getRole().getName());
+
+                if (!assigned
+                                && !uploadedByUser
+                                && !isDepartmentManager
+                                && !isOwner) {
+
+                        throw new BusinessException(
+                                        "You are not authorized to access this document");
+                }
+
                 GetObjectRequest getObjectRequest = GetObjectRequest.builder()
                                 .bucket(bucketName)
                                 .key(document.getS3Key())
@@ -224,7 +293,7 @@ public class DocumentService {
 
                 GetObjectPresignRequest presignRequest = GetObjectPresignRequest.builder()
                                 .signatureDuration(
-                                                Duration.ofMinutes(5))
+                                                Duration.ofMinutes(15))
                                 .getObjectRequest(
                                                 getObjectRequest)
                                 .build();

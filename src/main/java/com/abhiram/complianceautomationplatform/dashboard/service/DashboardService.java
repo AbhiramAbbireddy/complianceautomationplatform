@@ -1,5 +1,6 @@
 package com.abhiram.complianceautomationplatform.dashboard.service;
 
+import java.time.LocalDate;
 import java.util.List;
 
 import org.springframework.security.core.Authentication;
@@ -9,6 +10,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.abhiram.complianceautomationplatform.assignment.repository.ComplianceAssignmentRepository;
 import com.abhiram.complianceautomationplatform.common.enums.ComplianceStatus;
 import com.abhiram.complianceautomationplatform.compliance.repository.ComplianceRepository;
+import com.abhiram.complianceautomationplatform.dashboard.dto.EmployeeDashboardResponse;
 import com.abhiram.complianceautomationplatform.dashboard.dto.ManagerDashboardResponse;
 import com.abhiram.complianceautomationplatform.dashboard.dto.OwnerDashboardResponse;
 import com.abhiram.complianceautomationplatform.dashboard.dto.TeamMemberPerformanceResponse;
@@ -69,6 +71,18 @@ public class DashboardService {
                                                                 .countByCompanyAndStatus(
                                                                                 currentUser.getCompany(),
                                                                                 ComplianceStatus.COMPLETED))
+                                .verifiedCompliances(
+                                                complianceRepository
+                                                                .countByCompanyAndStatus(
+                                                                                currentUser.getCompany(),
+                                                                                ComplianceStatus.VERIFIED))
+
+                                .overdueCompliances(
+                                                complianceRepository
+                                                                .countByCompanyAndDueDateBeforeAndStatusNot(
+                                                                                currentUser.getCompany(),
+                                                                                LocalDate.now(),
+                                                                                ComplianceStatus.VERIFIED))
                                 .build();
         }
 
@@ -115,6 +129,18 @@ public class DashboardService {
                                                                 .countByDepartmentAndStatus(
                                                                                 currentUser.getDepartment(),
                                                                                 ComplianceStatus.COMPLETED))
+                                .verifiedCompliances(
+                                                complianceRepository
+                                                                .countByDepartmentAndStatus(
+                                                                                currentUser.getDepartment(),
+                                                                                ComplianceStatus.VERIFIED))
+
+                                .overdueCompliances(
+                                                complianceRepository
+                                                                .countByDepartmentAndDueDateBeforeAndStatusNot(
+                                                                                currentUser.getDepartment(),
+                                                                                LocalDate.now(),
+                                                                                ComplianceStatus.VERIFIED))
                                 .build();
         }
 
@@ -157,6 +183,45 @@ public class DashboardService {
                                                                                                 ComplianceStatus.COMPLETED))
                                                 .build())
                                 .toList();
+        }
+
+        @Transactional(readOnly = true)
+        public EmployeeDashboardResponse getEmployeeDashboard(
+                        Authentication authentication) {
+
+                CustomUserPrincipal principal = (CustomUserPrincipal) authentication.getPrincipal();
+
+                User currentUser = userRepository.findById(
+                                principal.getUser().getId())
+                                .orElseThrow(
+                                                () -> new ResourceNotFoundException(
+                                                                "User not found"));
+
+                return EmployeeDashboardResponse.builder()
+                                .assignedTasks(
+                                                assignmentRepository.countByAssignedTo(
+                                                                currentUser))
+                                .pendingTasks(
+                                                assignmentRepository
+                                                                .countByAssignedToAndCompliance_Status(
+                                                                                currentUser,
+                                                                                ComplianceStatus.PENDING))
+                                .inProgressTasks(
+                                                assignmentRepository
+                                                                .countByAssignedToAndCompliance_Status(
+                                                                                currentUser,
+                                                                                ComplianceStatus.IN_PROGRESS))
+                                .completedTasks(
+                                                assignmentRepository
+                                                                .countByAssignedToAndCompliance_Status(
+                                                                                currentUser,
+                                                                                ComplianceStatus.COMPLETED))
+                                .verifiedTasks(
+                                                assignmentRepository
+                                                                .countByAssignedToAndCompliance_Status(
+                                                                                currentUser,
+                                                                                ComplianceStatus.VERIFIED))
+                                .build();
         }
 
 }

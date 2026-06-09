@@ -120,4 +120,22 @@ public class GlobalExceptionHandler {
                 return ResponseEntity.badRequest()
                                 .body("File size exceeds 10MB limit");
         }
+
+        @ExceptionHandler(Exception.class)
+        public ResponseEntity<ErrorResponse> handleException(
+                        Exception ex) {
+
+                ex.printStackTrace();
+
+                return ResponseEntity.status(
+                                HttpStatus.INTERNAL_SERVER_ERROR)
+                                .body(
+                                                ErrorResponse.builder()
+                                                                .timestamp(
+                                                                                LocalDateTime.now())
+                                                                .status(500)
+                                                                .message(
+                                                                                "Internal Server Error")
+                                                                .build());
+        }
 }

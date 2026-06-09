@@ -26,35 +26,38 @@ import lombok.RequiredArgsConstructor;
 @SecurityRequirement(name = "bearerAuth")
 public class DocumentController {
 
-    private final DocumentService documentService;
+        private final DocumentService documentService;
 
-    @PostMapping(value = "/upload/{complianceId}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public DocumentResponse uploadDocument(
-            @PathVariable Long complianceId,
-            @RequestParam("file") MultipartFile file,
-            Authentication authentication)
-            throws IOException {
+        @PostMapping(value = "/upload/{complianceId}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+        public DocumentResponse uploadDocument(
+                        @PathVariable Long complianceId,
+                        @RequestParam("file") MultipartFile file,
+                        Authentication authentication)
+                        throws IOException {
 
-        return documentService.uploadDocument(
-                complianceId,
-                file,
-                authentication);
-    }
+                return documentService.uploadDocument(
+                                complianceId,
+                                file,
+                                authentication);
+        }
 
-    @GetMapping("/compliance/{complianceId}")
-    public List<DocumentResponse> getDocumentsByCompliance(
-            @PathVariable Long complianceId) {
+        @GetMapping("/compliance/{complianceId}")
+        public List<DocumentResponse> getDocumentsByCompliance(
+                        @PathVariable Long complianceId,
+                        Authentication authentication) {
 
-        return documentService
-                .getDocumentsByCompliance(
-                        complianceId);
-    }
+                return documentService.getDocumentsByCompliance(
+                                complianceId,
+                                authentication);
+        }
 
-    @GetMapping("/download/{documentId}")
-    public DownloadUrlResponse downloadDocument(
-            @PathVariable Long documentId) {
-        return documentService
-                .generateDownloadUrl(
-                        documentId);
-    }
+        @GetMapping("/download/{documentId}")
+        public DownloadUrlResponse downloadDocument(
+                        @PathVariable Long documentId,
+                        Authentication authentication) {
+
+                return documentService.generateDownloadUrl(
+                                documentId,
+                                authentication);
+        }
 }
