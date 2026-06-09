@@ -7,6 +7,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.abhiram.complianceautomationplatform.audit.annotation.Audit;
 import com.abhiram.complianceautomationplatform.department.entity.Department;
 import com.abhiram.complianceautomationplatform.department.repository.DepartmentRepository;
 import com.abhiram.complianceautomationplatform.exception.BusinessException;
@@ -128,6 +129,10 @@ public class UserService {
                                 .build();
         }
 
+        @Audit(
+        action = "CREATE_EMPLOYEE",
+        entityType = "USER",
+        details = "Employee created")
         @Transactional
         public UserResponse createEmployee(
                         CreateEmployeeRequest request,

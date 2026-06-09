@@ -37,7 +37,10 @@ public class AssignmentService {
         private final ComplianceDocumentRepository documentRepository;
         private final EmailService emailService;
 
-        @Audit(action = "ASSIGN_COMPLIANCE", entityType = "COMPLIANCE")
+        @Audit(
+        action = "ASSIGN_COMPLIANCE",
+        entityType = "COMPLIANCE",
+        details = "Compliance assigned")
         @Transactional
         public AssignmentResponse createAssignment(
                         CreateAssignmentRequest request,
@@ -197,6 +200,10 @@ public class AssignmentService {
                                 assignment);
         }
 
+        @Audit(
+        action = "VERIFY_COMPLIANCE",
+        entityType = "COMPLIANCE",
+        details = "Compliance verified")
         @Transactional
         public AssignmentResponse verifyAssignment(
                         Long assignmentId,

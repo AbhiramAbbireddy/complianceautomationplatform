@@ -7,10 +7,12 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import com.abhiram.complianceautomationplatform.audit.entity.AuditLog;
 
 public interface AuditLogRepository
-        extends JpaRepository<AuditLog, Long> {
-    List<AuditLog> findByEntityTypeOrderByPerformedAtDesc(
-            String entityType);
+                extends JpaRepository<AuditLog, Long> {
+        List<AuditLog> findByEntityTypeOrderByPerformedAtDesc(
+                        String entityType);
 
-    List<AuditLog> findByPerformedByOrderByPerformedAtDesc(
-            String performedBy);
+        List<AuditLog> findByPerformedByOrderByPerformedAtDesc(
+                        String performedBy);
+
+        List<AuditLog> findAllByOrderByPerformedAtDesc();
 }

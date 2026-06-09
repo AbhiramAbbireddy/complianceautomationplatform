@@ -7,6 +7,7 @@ import org.springframework.stereotype.Component;
 
 import com.abhiram.complianceautomationplatform.audit.annotation.Audit;
 import com.abhiram.complianceautomationplatform.audit.service.AuditLogService;
+import com.abhiram.complianceautomationplatform.security.SecurityUtils;
 
 import lombok.RequiredArgsConstructor;
 
@@ -20,11 +21,19 @@ public class AuditAspect {
     public void logAudit(
             JoinPoint joinPoint,
             Audit audit) {
+
+        String performedBy = SecurityUtils.getCurrentUserEmail();
+
+        String details = audit.details().isBlank()
+                ? java.util.Arrays.toString(
+                        joinPoint.getArgs())
+                : audit.details();
+
         auditLogService.log(
                 audit.action(),
                 audit.entityType(),
                 null,
-                "SYSTEM",
-                "Triggered by AOP");
+                performedBy,
+                details);
     }
 }

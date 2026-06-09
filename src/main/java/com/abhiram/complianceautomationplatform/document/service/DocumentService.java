@@ -14,6 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.abhiram.complianceautomationplatform.assignment.repository.ComplianceAssignmentRepository;
+import com.abhiram.complianceautomationplatform.audit.annotation.Audit;
 import com.abhiram.complianceautomationplatform.compliance.entity.Compliance;
 import com.abhiram.complianceautomationplatform.compliance.repository.ComplianceRepository;
 import com.abhiram.complianceautomationplatform.document.dto.DocumentResponse;
@@ -62,6 +63,10 @@ public class DocumentService {
         @Value("${aws.s3.bucket-name}")
         private String bucketName;
 
+        @Audit(
+        action = "UPLOAD_DOCUMENT",
+        entityType = "DOCUMENT",
+        details = "Document uploaded")
         @Transactional
         public DocumentResponse uploadDocument(
                         Long complianceId,

@@ -40,7 +40,7 @@ public class AuditLogService {
     @Transactional(readOnly = true)
     public List<AuditLogResponse> getAllLogs() {
         return auditLogRepository
-                .findAll()
+                .findAllByOrderByPerformedAtDesc()
                 .stream()
                 .map(this::mapToResponse)
                 .toList();

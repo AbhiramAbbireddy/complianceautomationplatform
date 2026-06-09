@@ -7,6 +7,7 @@ import java.util.stream.Collectors;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 
+import com.abhiram.complianceautomationplatform.audit.annotation.Audit;
 import com.abhiram.complianceautomationplatform.department.dto.CreateDepartmentRequest;
 import com.abhiram.complianceautomationplatform.department.dto.DepartmentResponse;
 import com.abhiram.complianceautomationplatform.department.entity.Department;
@@ -21,6 +22,10 @@ import lombok.RequiredArgsConstructor;
 public class DepartmentService {
     private final DepartmentRepository departmentRepository;
 
+    @Audit(
+        action = "CREATE_DEPARTMENT",
+        entityType = "DEPARTMENT",
+        details = "Department created")
     public DepartmentResponse createDepartment(
             CreateDepartmentRequest request,
             Authentication authentication) {

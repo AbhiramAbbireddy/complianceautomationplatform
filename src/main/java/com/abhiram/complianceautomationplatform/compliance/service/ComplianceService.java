@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.abhiram.complianceautomationplatform.assignment.repository.ComplianceAssignmentRepository;
+import com.abhiram.complianceautomationplatform.audit.annotation.Audit;
 import com.abhiram.complianceautomationplatform.common.enums.ComplianceStatus;
 import com.abhiram.complianceautomationplatform.compliance.dto.ComplianceResponse;
 import com.abhiram.complianceautomationplatform.compliance.dto.CreateComplianceRequest;
@@ -32,6 +33,10 @@ public class ComplianceService {
 
         private final ComplianceAssignmentRepository complianceAssignmentRepository;
 
+        @Audit(
+        action = "CREATE_COMPLIANCE",
+        entityType = "COMPLIANCE",
+        details = "Compliance created")
         @Transactional
         public ComplianceResponse createCompliance(
                         CreateComplianceRequest request,
