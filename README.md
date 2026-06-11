@@ -72,10 +72,11 @@ complianceautomationplatform/
 ├── dashboard/          # Role-scoped dashboard aggregations
 ├── exception/          # GlobalExceptionHandler, custom exceptions
 └── config/             # SecurityConfig, AsyncConfig, SchedulerConfig, OpenApiConfig
-
-<p align="center"> <img src="docs/architecture.svg" alt="Architecture Diagram" width="1200"> </p>
-
 ```
+
+<p align="center">
+  <img src="docs/architecture.svg" alt="Architecture Diagram" width="1200">
+</p>
 
 **Request flow:**
 
@@ -215,7 +216,9 @@ Role enforcement uses `@PreAuthorize` at the controller method level. Service me
 
 Ten tables across three migration scripts plus the base Hibernate-generated schema.
 
-<p align="center"> <img src="docs/erd.svg" alt="Database ERD" width="1200"> </p>
+<p align="center">
+  <img src="docs/erd.svg" alt="Database ERD" width="1200">
+</p>
 
 ### Tables
 
